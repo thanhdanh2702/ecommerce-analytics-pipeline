@@ -1,0 +1,46 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache / build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# macOS
+.DS_Store
+
+# dbt artifacts
+dbt/ecommerce_dbt/target/
+dbt/ecommerce_dbt/dbt_packages/
+dbt/ecommerce_dbt/logs/
+
+# Data files
+# Keep folder structure, ignore actual datasets
+data/raw/*
+!data/raw/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+# Airflow local files
+logs/
+airflow.db
+.airflow/
+standalone_admin_password.txt
+
+# Docker / local runtime
+*.log
+*.pid
+
+# IDE / Editor
+.vscode/
+.idea/
