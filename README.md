@@ -30,6 +30,8 @@ This project separates databases:
 - `warehouse-postgres`: project data warehouse for raw and analytics data
 - `airflow-postgres`: Airflow metadata database
 
+The warehouse database is exposed on `localhost:5434` by default to avoid conflicts with a local Postgres instance on `5432`. Inside Docker, services still connect to `warehouse-postgres:5432`.
+
 Docker Compose reads `.env` automatically. For local dbt commands outside Docker, export the `.env` values first:
 
 ```bash
@@ -37,6 +39,20 @@ set -a
 source .env
 set +a
 ```
+
+## dbt
+
+This project uses dbt Core with the Postgres adapter. If your editor offers dbt Fusion, do not use it for this project because Fusion does not support the `postgres` adapter here.
+
+Validate the dbt setup:
+
+```bash
+source .venv/bin/activate
+dbt debug --project-dir dbt/ecommerce_dbt --profiles-dir dbt/ecommerce_dbt
+dbt parse --project-dir dbt/ecommerce_dbt --profiles-dir dbt/ecommerce_dbt
+```
+
+For VS Code with the dbt Power User extension, use the project virtual environment as the Python interpreter and set the dbt integration to `core`.
 
 Airflow setup is available through Docker Compose:
 
