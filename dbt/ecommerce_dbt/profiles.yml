@@ -3,10 +3,10 @@ ecommerce_dbt:
   outputs:
     dev:
       type: postgres
-      host: "{{ env_var('WAREHOUSE_DB_HOST') }}"
-      user: "{{ env_var('WAREHOUSE_DB_USER') }}"
-      password: "{{ env_var('WAREHOUSE_DB_PASSWORD') }}"
-      port: "{{ env_var('WAREHOUSE_DB_PORT') | as_number }}"
-      dbname: "{{ env_var('WAREHOUSE_DB_NAME') }}"
-      schema: "{{ env_var('WAREHOUSE_DBT_SCHEMA') }}"
-      threads: "{{ env_var('DBT_THREADS') | as_number }}"
+      host: "{{ env_var('WAREHOUSE_DB_HOST', 'localhost') }}"
+      user: "{{ env_var('WAREHOUSE_DB_USER', 'ecommerce') }}"
+      password: "{{ env_var('WAREHOUSE_DB_PASSWORD', 'ecommerce') }}"
+      port: "{{ env_var('WAREHOUSE_DB_PORT', '5434') | as_number }}"
+      dbname: "{{ env_var('WAREHOUSE_DB_NAME', 'ecommerce') }}"
+      schema: "{{ env_var('WAREHOUSE_DBT_SCHEMA', 'analytics') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | as_number }}"
