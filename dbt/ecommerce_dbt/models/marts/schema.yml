@@ -1,0 +1,135 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Customer dimension with customer location attributes and order summary metrics.
+    columns:
+      - name: customer_id
+        description: Primary customer identifier.
+        tests:
+          - not_null
+          - unique
+      - name: customer_unique_id
+        description: Identifier for a unique customer across orders.
+        tests:
+          - not_null
+
+  - name: dim_products
+    description: Product dimension with category translation and product attributes.
+    columns:
+      - name: product_id
+        description: Primary product identifier.
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_sellers
+    description: Seller dimension with seller location attributes.
+    columns:
+      - name: seller_id
+        description: Primary seller identifier.
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_dates
+    description: Calendar dimension used for date-based reporting.
+    columns:
+      - name: date_day
+        description: Calendar date at daily grain.
+        tests:
+          - not_null
+          - unique
+
+  - name: fact_orders
+    description: Order fact table at one row per order.
+    columns:
+      - name: order_id
+        description: Primary order identifier.
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: Customer associated with the order.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_purchase_date
+        description: Date when the order was purchased.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: order_delivered_customer_date
+        description: Date when the order was delivered to the customer.
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+
+  - name: fact_order_items
+    description: Order item fact table at one row per order and order item.
+    columns:
+      - name: order_item_key
+        description: Surrogate key for the order item grain.
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Order associated with the item.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_orders')
+              field: order_id
+      - name: order_item_id
+        description: Item sequence number within the order.
+        tests:
+          - not_null
+      - name: product_id
+        description: Product associated with the order item.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+      - name: seller_id
+        description: Seller associated with the order item.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_sellers')
+              field: seller_id
+      - name: shipping_limit_date_day
+        description: Shipping limit date for joining to the date dimension.
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+
+  - name: fact_payments
+    description: Payment fact table at one row per order and payment sequence.
+    columns:
+      - name: payment_key
+        description: Surrogate key for the payment grain.
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Order associated with the payment.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fact_orders')
+              field: order_id
+      - name: payment_sequential
+        description: Payment sequence number within the order.
+        tests:
+          - not_null
+      - name: payment_type
+        description: Payment method type.
+        tests:
+          - not_null
