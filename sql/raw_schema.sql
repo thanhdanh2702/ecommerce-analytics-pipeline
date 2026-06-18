@@ -1,16 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS raw;
 
-DROP TABLE IF EXISTS raw.customers CASCADE;
-DROP TABLE IF EXISTS raw.geolocation CASCADE;
-DROP TABLE IF EXISTS raw.order_items CASCADE;
-DROP TABLE IF EXISTS raw.order_payments CASCADE;
-DROP TABLE IF EXISTS raw.order_reviews CASCADE;
-DROP TABLE IF EXISTS raw.orders CASCADE;
-DROP TABLE IF EXISTS raw.products CASCADE;
-DROP TABLE IF EXISTS raw.sellers CASCADE;
-DROP TABLE IF EXISTS raw.product_category_name_translation CASCADE;
-
-CREATE TABLE raw.customers (
+CREATE TABLE IF NOT EXISTS raw.customers (
     customer_id                 TEXT,
     customer_unique_id         TEXT,
     customer_zip_code_prefix    TEXT,
@@ -18,7 +8,7 @@ CREATE TABLE raw.customers (
     customer_state              TEXT
 );
 
-CREATE TABLE raw.geolocation (
+CREATE TABLE IF NOT EXISTS raw.geolocation (
     geolocation_zip_code_prefix TEXT,
     geolocation_lat             TEXT,
     geolocation_lng             TEXT,
@@ -26,7 +16,7 @@ CREATE TABLE raw.geolocation (
     geolocation_state           TEXT
 );
 
-CREATE TABLE raw.order_items (
+CREATE TABLE IF NOT EXISTS raw.order_items (
     order_id            TEXT,
     order_item_id       TEXT,
     product_id          TEXT,
@@ -36,7 +26,7 @@ CREATE TABLE raw.order_items (
     freight_value       TEXT
 );
 
-CREATE TABLE raw.order_payments (
+CREATE TABLE IF NOT EXISTS raw.order_payments (
     order_id            TEXT,
     payment_sequential  TEXT,
     payment_type        TEXT,
@@ -44,7 +34,7 @@ CREATE TABLE raw.order_payments (
     payment_value       TEXT
 );
 
-CREATE TABLE raw.order_reviews (
+CREATE TABLE IF NOT EXISTS raw.order_reviews (
     review_id               TEXT,
     order_id                TEXT,
     review_score            TEXT,
@@ -54,7 +44,7 @@ CREATE TABLE raw.order_reviews (
     review_answer_timestamp TEXT
 );
 
-CREATE TABLE raw.orders (
+CREATE TABLE IF NOT EXISTS raw.orders (
     order_id                        TEXT,
     customer_id                     TEXT,
     order_status                    TEXT,
@@ -65,7 +55,7 @@ CREATE TABLE raw.orders (
     order_estimated_delivery_date   TEXT
 );
 
-CREATE TABLE raw.products (
+CREATE TABLE IF NOT EXISTS raw.products (
     product_id                      TEXT,
     product_category_name           TEXT,
     product_name_lenght             TEXT,
@@ -77,14 +67,14 @@ CREATE TABLE raw.products (
     product_width_cm                TEXT
 );
 
-CREATE TABLE raw.sellers (
+CREATE TABLE IF NOT EXISTS raw.sellers (
     seller_id               TEXT,
     seller_zip_code_prefix  TEXT,
     seller_city             TEXT,
     seller_state            TEXT
 );
 
-CREATE TABLE raw.product_category_name_translation (
+CREATE TABLE IF NOT EXISTS raw.product_category_name_translation (
     product_category_name           TEXT,
     product_category_name_english   TEXT
 );

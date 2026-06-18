@@ -1,38 +1,135 @@
 # End-to-End E-commerce Analytics Pipeline
 
-End-to-end analytics pipeline for the Olist e-commerce dataset using PostgreSQL, Airflow, dbt, SQL, and Metabase.
+Analytics engineering project for the Olist e-commerce dataset. The pipeline
+loads CSV files into PostgreSQL, validates the raw data, builds analytics models
+with dbt, orchestrates the workflow with Airflow, and serves reporting queries
+to Metabase.
 
-## Project Layout
+## Data Flow
 
-- `data/raw/olist`: raw Olist CSV files
-- `data/processed`: processed outputs
-- `scripts`: Python scripts you will implement
-- `sql`: SQL files you will implement
-- `dags`: Airflow DAGs you will implement
-- `dbt/ecommerce_dbt`: dbt project scaffold
-- `dashboard/queries`: SQL queries used by the Metabase dashboard
-- `docs`: architecture, data model, pipeline documentation, and dashboard exports
+```text
+Olist CSV files
+    ↓
+Python ingestion and quality checks
+    ↓
+PostgreSQL raw schema
+    ↓
+dbt staging views
+    ↓
+dbt intermediate views
+    ↓
+dbt analytics marts
+    ↓
+Metabase dashboard
+```
 
-## Environment Setup
+Airflow runs the workflow as four TaskFlow tasks:
 
-Copy `.env.example` to `.env`, then edit credentials and ports if needed.
+```text
+create_raw_tables
+→ load_raw_data
+→ check_raw_data
+→ dbt_build
+```
+
+The DAG uses `@task.bash`, runs manually by default, and allows only one active
+run at a time.
+
+## Technology Stack
+
+- PostgreSQL 16 for raw and analytics data
+- Apache Airflow 3.2.2 with `LocalExecutor`
+- dbt Core 1.10 with the PostgreSQL adapter
+- Python 3.12 for ingestion and raw-data validation
+- Metabase for dashboards
+- Docker Compose for local services
+
+## Project Structure
+
+```text
+.
+├── dags/                         Airflow DAG
+├── dashboard/queries/            Metabase SQL queries
+├── data/raw/olist/               Source CSV files, excluded from Git
+├── dbt/ecommerce_dbt/            dbt project
+│   └── models/
+│       ├── staging/              9 cleaned source views
+│       ├── intermediate/         2 enriched views
+│       └── marts/                7 analytics tables
+├── docker/                       Airflow image and PostgreSQL initialization
+├── docs/                         Architecture and data documentation
+├── scripts/                      Ingestion and quality-check scripts
+├── sql/                          Raw schema and analytical queries
+└── docker-compose.yml
+```
+
+## Setup
+
+Requirements:
+
+- Docker with Docker Compose
+- Python 3.12 for optional local execution
+- The nine Olist CSV files in `data/raw/olist/`
+
+Create the environment file and replace the example passwords and Airflow
+secrets:
 
 ```bash
 cp .env.example .env
+```
+
+`AIRFLOW_API_SECRET_KEY` and `AIRFLOW_JWT_SECRET` must be shared by all Airflow
+services and should each contain at least 64 random characters.
+
+Start PostgreSQL and Airflow:
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+Open Airflow at `http://localhost:8080`. The username and password come from
+`AIRFLOW_ADMIN_USERNAME` and `AIRFLOW_ADMIN_PASSWORD` in `.env`.
+
+Trigger `ecommerce_analytics_pipeline` from the UI or run:
+
+```bash
+docker compose exec airflow-scheduler \
+  airflow dags trigger ecommerce_analytics_pipeline
+```
+
+The DAG is unscheduled because the bundled Olist dataset is static. Add a
+schedule only when the project has a recurring source feed.
+
+## Data Warehouse
+
+The project uses two PostgreSQL databases:
+
+- `warehouse-postgres` stores the `raw` and `analytics` schemas.
+- `airflow-postgres` stores Airflow metadata only.
+
+The warehouse is exposed on `localhost:5434` by default. Containers connect to
+it through `warehouse-postgres:5432`.
+
+The dbt project contains 18 models:
+
+- 9 staging views that clean strings and cast source values
+- 2 intermediate views that enrich orders and order items
+- 7 mart tables for dimensions and facts
+
+`dbt build` also executes 89 source and model tests.
+
+## Local Development
+
+Install the Python and dbt dependencies:
+
+```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-docker compose up -d warehouse-postgres
 ```
 
-This project separates databases:
-
-- `warehouse-postgres`: project data warehouse for raw and analytics data
-- `airflow-postgres`: Airflow metadata database
-
-The warehouse database is exposed on `localhost:5434` by default to avoid conflicts with a local Postgres instance on `5432`. Inside Docker, services still connect to `warehouse-postgres:5432`.
-
-Docker Compose reads `.env` automatically. For local dbt commands outside Docker, export the `.env` values first:
+Load `.env` before running dbt outside Docker:
 
 ```bash
 set -a
@@ -40,31 +137,27 @@ source .env
 set +a
 ```
 
-## dbt
-
-This project uses dbt Core with the Postgres adapter. If your editor offers dbt Fusion, do not use it for this project because Fusion does not support the `postgres` adapter here.
-
-Validate the dbt setup:
+Validate the dbt project:
 
 ```bash
-source .venv/bin/activate
 dbt debug --project-dir dbt/ecommerce_dbt --profiles-dir dbt/ecommerce_dbt
-dbt parse --project-dir dbt/ecommerce_dbt --profiles-dir dbt/ecommerce_dbt
+dbt build --project-dir dbt/ecommerce_dbt --profiles-dir dbt/ecommerce_dbt
 ```
 
-For VS Code with the dbt Power User extension, use the project virtual environment as the Python interpreter and set the dbt integration to `core`.
+Check Airflow DAG imports:
 
-## Analytics Dashboard
+```bash
+docker compose exec airflow-scheduler \
+  airflow dags list-import-errors --output=json
+```
 
-The analytics dashboard is built with Metabase using the models in the PostgreSQL `analytics` schema.
+## Metabase Dashboard
 
-[View the dashboard as PDF](docs/E-commerce%20Analytics%20Dashboard.pdf)
+The dashboard reads from the PostgreSQL `analytics` schema.
 
-![E-commerce Analytics Dashboard](docs/images/ecommerce-analytics-dashboard.png)
+[View the exported dashboard PDF](docs/E-commerce%20Analytics%20Dashboard.pdf)
 
-### Run Metabase
-
-Create the Metabase container the first time:
+Start Metabase:
 
 ```bash
 docker run -d \
@@ -75,73 +168,38 @@ docker run -d \
   metabase/metabase:latest
 ```
 
-For later sessions, start the existing container:
+For later sessions:
 
 ```bash
 docker start metabase
 ```
 
-Open the Metabase UI at `http://localhost:3000`.
-
-Stop Metabase when it is not needed:
-
-```bash
-docker stop metabase
-```
-
-The `metabase_data` Docker volume persists Metabase users, questions, chart settings, and dashboard layout between container restarts.
-
-### Connect Metabase to the Warehouse
-
-In Metabase, open **Admin settings → Databases → Add a database**, select PostgreSQL, and use:
+Connect Metabase with these settings:
 
 | Setting | Value |
 | --- | --- |
-| Display name | `E-commerce Analytics` |
 | Host | `host.docker.internal` |
-| Port | `5434` or `WAREHOUSE_DB_PORT` from `.env` |
-| Database name | `WAREHOUSE_DB_NAME` from `.env` |
+| Port | `WAREHOUSE_DB_PORT` from `.env` |
+| Database | `WAREHOUSE_DB_NAME` from `.env` |
 | Username | `WAREHOUSE_DB_USER` from `.env` |
 | Password | `WAREHOUSE_DB_PASSWORD` from `.env` |
 | Schema | `analytics` |
 | SSL | Disabled for local development |
 
-`host.docker.internal` is required because Metabase runs inside Docker while the warehouse port is exposed through the macOS host.
+Create native SQL questions from the files in `dashboard/queries/`.
 
-Before connecting Metabase, confirm that the warehouse is running:
+## Documentation
 
-```bash
-docker compose up -d warehouse-postgres
-docker compose ps warehouse-postgres
-```
+- [Architecture](docs/architecture.md)
+- [Pipeline flow](docs/pipeline_flow.md)
+- [Data model](docs/data_model.md)
 
-### Dashboard Questions
-
-Create a native SQL question in Metabase for each query below, configure its visualization, save it, and add it to the dashboard.
-
-| Query | Recommended visualization | Main fields |
-| --- | --- | --- |
-| `dashboard/queries/revenue_by_month.sql` | Line chart | X: `order_month`, Y: `revenue` |
-| `dashboard/queries/order_status.sql` | Donut chart | Category: `order_status`, Metric: `order_count` |
-| `dashboard/queries/payment_methods.sql` | Donut chart | Category: `payment_type`, Metric: `total_payment_value` |
-| `dashboard/queries/top_categories.sql` | Horizontal bar chart | Y: `product_category`, X: `revenue` |
-| `dashboard/queries/delivery_performance.sql` | Horizontal bar chart | Y: `customer_state`, X: `average_delivery_days` |
-
-The SQL files are version-controlled in Git. Metabase-specific question definitions and dashboard layout remain in the `metabase_data` volume, while the PDF above provides a portable snapshot of the completed dashboard.
-
-## Airflow
-
-Airflow setup is available through Docker Compose:
+## Stop Services
 
 ```bash
-docker compose up -d
+docker compose down
+docker stop metabase
 ```
 
-Airflow UI: `http://localhost:8080`
-
-Default local credentials:
-
-- Username: `admin`
-- Password: `admin`
-
-These values come from `AIRFLOW_ADMIN_USERNAME` and `AIRFLOW_ADMIN_PASSWORD` in `.env`.
+Named Docker volumes preserve warehouse data, Airflow metadata, and Metabase
+configuration between restarts.
