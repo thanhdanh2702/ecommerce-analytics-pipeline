@@ -63,6 +63,45 @@ run at a time.
 └── docker-compose.yml
 ```
 
+## Download the Dataset
+
+Download the
+[Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+from Kaggle.
+
+Extract the downloaded archive and place the following nine CSV files in
+`data/raw/olist/`:
+
+- `olist_customers_dataset.csv`
+- `olist_geolocation_dataset.csv`
+- `olist_order_items_dataset.csv`
+- `olist_order_payments_dataset.csv`
+- `olist_order_reviews_dataset.csv`
+- `olist_orders_dataset.csv`
+- `olist_products_dataset.csv`
+- `olist_sellers_dataset.csv`
+- `product_category_name_translation.csv`
+
+The expected directory structure is:
+
+```text
+data/
+└── raw/
+    └── olist/
+        ├── olist_customers_dataset.csv
+        ├── olist_geolocation_dataset.csv
+        ├── olist_order_items_dataset.csv
+        ├── olist_order_payments_dataset.csv
+        ├── olist_order_reviews_dataset.csv
+        ├── olist_orders_dataset.csv
+        ├── olist_products_dataset.csv
+        ├── olist_sellers_dataset.csv
+        └── product_category_name_translation.csv
+```
+
+The dataset files are excluded from Git and must be downloaded locally before
+running the pipeline.
+
 ## Setup
 
 Requirements:
